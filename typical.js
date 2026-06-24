@@ -1,4 +1,4 @@
-export const TYPICAL = [
+var TYPICAL = [
   {cat:'Крупы и гарниры', items:[
     {name:'Гречка',        unit:'g',   per:90},
     {name:'Рис',           unit:'g',   per:90},
@@ -16,7 +16,7 @@ export const TYPICAL = [
     {name:'Сублиматы мясные', unit:'g', per:40},
     {name:'Колбаса/салями', unit:'g',  per:60},
     {name:'Сало',          unit:'g',   per:40},
-    {name:'Рыба конс.',    unit:'g',   per:125},
+    {name:'Рыба консерв.',    unit:'g',   per:125},
     {name:'Сосиски',       unit:'g',   per:100},
   ]},
   {cat:'Молочка и жиры', items:[
