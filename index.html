@@ -1,694 +1,698 @@
 <!doctype html>
 <html lang="ru">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Раскладка продуктов в поход</title>
-<link rel="stylesheet" href="style.css" />
-<script src="./typical.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Раскладка продуктов в поход</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="./typical.js"></script>
 </head>
+
 <body>
 
-<header>
-  <div class="htitle">Раскладка продуктов в поход<br/></div>
-  
-</header>
+  <header>
+    <div class="htitle">Раскладка продуктов в поход<br /></div>
+  </header>
 
-<div class="wrap">
-  <div class="card cheatsheet">
-    <h2>Нормы на 1 чел.</h2>
-    <div class="cheat-search">
-      <input type="text" id="cheatSearch" placeholder="Поиск...">
+  <div class="wrap">
+    <div class="card cheatsheet">
+      <h2>Нормы на 1 чел.</h2>
+      <div class="cheat-search">
+        <input type="text" id="cheatSearch" placeholder="Поиск...">
+      </div>
+      <div class="cheat-list" id="cheatList"></div>
+      <div class="hint">Клик — добавить в активный приём пищи. Количество × число людей.</div>
     </div>
-    <div class="cheat-list" id="cheatList"></div>
-    <div class="hint">Клик — добавить в активный приём пищи. Количество × число людей.</div>
+
+    <div class="card main">
+      <div class="row">
+        <label>Людей:
+          <input type="number" id="people" min="1" value="2" style="width:70px">
+        </label>
+        <label>Дней:
+          <input type="number" id="daysCount" min="1" value="3" style="width:70px">
+        </label>
+      </div>
+
+      <div class="trip-comment-wrap"
+        style="margin: 16px 0 24px 0; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+        <label style="display: block; font-weight: bold; margin-bottom: 8px;">Комментарий к походу (снаряжение, нитка
+          маршрута, особенности):</label>
+        <textarea id="tripComment" rows="3"
+          style="width: 100%; box-sizing: border-box; padding: 8px; font-family: inherit; border: 1px solid #ccc; border-radius: 4px; resize: vertical;"
+          placeholder="Например: Маршрут по реке... Начать сбор в Васкелово..."></textarea>
+      </div>
+
+      <div class="days-tabs" id="daysTabs"></div>
+
+      <div class="day-header">
+        <div class="day-title" id="dayTitle"></div>
+        <div class="meals-for-day" id="mealsForDay"></div>
+      </div>
+
+      <div id="dayContent"></div>
+    </div>
+
+    <div class="card total-card">
+      <div class="print-btn-wrap">
+        <button class="primary" id="printBtn" style="width:100%">🖨 Таблица для печати</button>
+      </div>
+      <h2>Итого на группу</h2>
+      <div id="totals"></div>
+      <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="exportBtn">Экспорт JSON</button>
+        <button id="importBtn">Импорт JSON</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+        <button class="danger" id="resetBtn">Сброс</button>
+      </div>
+    </div>
   </div>
 
-  <div class="card main">
-    <div class="row">
-      <label>Людей:
-        <input type="number" id="people" min="1" value="2" style="width:70px">
-      </label>
-      <label>Дней:
-        <input type="number" id="daysCount" min="1" value="3" style="width:70px">
-      </label>
-    </div>
-
-    <div class="days-tabs" id="daysTabs"></div>
-
-    <div class="day-header">
-      <div class="day-title" id="dayTitle"></div>
-      <div class="meals-for-day" id="mealsForDay"></div>
-    </div>
-
-    <div id="dayContent"></div>
+  <div class="print-header">
+    <h1>Раскладка продуктов в поход</h1>
+    <p id="printInfo"></p>
   </div>
+  <div class="print-table" id="printTable"></div>
 
-  <div class="card total-card">
-    <div class="print-btn-wrap">
-      <button class="primary" id="printBtn" style="width:100%">🖨 Таблица для печати</button>
-    </div>
-    <h2>Итого на группу</h2>
-    <div id="totals"></div>
-    <div style="margin-top:16px;display:flex;gap:6px;flex-wrap:wrap">
-      <button id="exportBtn">Экспорт JSON</button>
-      <button id="importBtn">Импорт JSON</button>
-      <input type="file" id="importFile" accept=".json" hidden>
-      <button class="danger" id="resetBtn">Сброс</button>
-    </div>
-  </div>
-</div>
+  <datalist id="nameSuggestions"></datalist>
+  <div class="toast" id="toast"></div>
 
-<div class="print-header">
-  <h1>Раскладка продуктов в поход</h1>
-  <p id="printInfo"></p>
-</div>
-<div class="print-table" id="printTable"></div>
+  <script>
+    const MEALS = [
+      { id: 'breakfast', name: 'Завтрак' },
+      { id: 'lunch', name: 'Обед' },
+      { id: 'snack', name: 'Перекус' },
+      { id: 'dinner', name: 'Ужин' },
+    ];
+    const UNITS = { g: 'г', kg: 'кг', pcs: 'шт.', pack: 'упак.', can: 'банка', l: 'л' };
+    const LS_KEY = 'naviu_calc_v9';
+    const GAS_PER_LITER = 15;
 
-<datalist id="nameSuggestions"></datalist>
-<div class="toast" id="toast"></div>
+    const DEFAULT_MEALS = { breakfast: true, lunch: true, snack: false, dinner: true };
 
-<script>
-// import { TYPICAL } from 'typical.js';
+    let state = load() || {
+      people: 2,
+      days: [],
+      currentDay: 0,
+      comment: '',
+    };
 
-const MEALS = [
-  {id:'breakfast', name:'Завтрак'},
-  {id:'lunch',     name:'Обед'},
-  {id:'snack',     name:'Перекус'},
-  {id:'dinner',    name:'Ужин'},
-];
-const UNITS = {g:'г', kg:'кг', pcs:'шт.', pack:'упак.', can:'банка'};
-const LS_KEY = 'naviu_calc_v7';
-
-// const TYPICAL = [
-//   {cat:'Крупы и гарниры', items:[
-//     {name:'Гречка',        unit:'g',   per:90},
-//     {name:'Рис',           unit:'g',   per:90},
-//     {name:'Пшено',         unit:'g',   per:90},
-//     {name:'Булгур',        unit:'g',   per:90},
-//     {name:'Кускус',        unit:'g',   per:70},
-//     {name:'Макароны',      unit:'g',   per:110},
-//     {name:'Лапша',         unit:'g',   per:90},
-//     {name:'Овсянка',       unit:'g',   per:60},
-//     {name:'Манка',         unit:'g',   per:50},
-//     {name:'Картофель сушёный', unit:'g', per:40},
-//   ]},
-//   {cat:'Мясо и рыба', items:[
-//     {name:'Тушёнка',       unit:'g',   per:125},
-//     {name:'Сублиматы мясные', unit:'g', per:40},
-//     {name:'Колбаса/салями', unit:'g',  per:60},
-//     {name:'Сало',          unit:'g',   per:40},
-//     {name:'Рыба конс.',    unit:'g',   per:125},
-//     {name:'Сосиски',       unit:'g',   per:100},
-//   ]},
-//   {cat:'Молочка и жиры', items:[
-//     {name:'Сыр',           unit:'g',   per:40},
-//     {name:'Масло сливочное', unit:'g', per:15},
-//     {name:'Масло растит.', unit:'g',   per:15},
-//     {name:'Сухое молоко',  unit:'g',   per:20},
-//     {name:'Сгущёнка',      unit:'g',   per:40},
-//     {name:'Сметана сухая', unit:'g',   per:15},
-//   ]},
-//   {cat:'Овощи и зелень', items:[
-//     {name:'Лук',           unit:'g',   per:30},
-//     {name:'Чеснок',        unit:'g',   per:7},
-//     {name:'Морковь',       unit:'g',   per:50},
-//     {name:'Томатная паста', unit:'g',  per:20},
-//   ]},
-//   {cat:'Хлеб и супы', items:[
-//     {name:'Хлеб',          unit:'g',   per:70},
-//     {name:'Сухари',        unit:'g',   per:50},
-//     {name:'Лаваш',         unit:'g',   per:60},
-//     {name:'Суп пакет.',    unit:'g',   per:50},
-//   ]},
-//   {cat:'Напитки', items:[
-//     {name:'Чай',           unit:'g',   per:5},
-//     {name:'Кофе',          unit:'g',   per:6},
-//     {name:'Какао',         unit:'g',   per:20},
-//     {name:'Цикорий',       unit:'g',   per:5},
-//     {name:'Кисель',        unit:'g',   per:20},
-//   ]},
-//   {cat:'Сладкое', items:[
-//     {name:'Сахар',         unit:'g',   per:25},
-//     {name:'Шоколад',       unit:'g',   per:30},
-//     {name:'Конфеты',       unit:'g',   per:40},
-//     {name:'Печенье',       unit:'g',   per:50},
-//     {name:'Сушки/баранки', unit:'g',   per:40},
-//     {name:'Халва',         unit:'g',   per:40},
-//     {name:'Козинаки',      unit:'g',   per:40},
-//     {name:'Мармелад',      unit:'g',   per:30},
-//     {name:'Мёд',           unit:'g',   per:25},
-//   ]},
-//   {cat:'Перекус', items:[
-//     {name:'Орехи',         unit:'g',   per:30},
-//     {name:'Сухофрукты',    unit:'g',   per:30},
-//     {name:'Батончик мюсли', unit:'pcs', per:1},
-//     {name:'Шоколад. батончик', unit:'pcs', per:1},
-//     {name:'Ириски',        unit:'g',   per:30},
-//     {name:'Курага',        unit:'g',   per:30},
-//     {name:'Изюм',          unit:'g',   per:30},
-//   ]},
-//   {cat:'Специи и прочее', items:[
-//     {name:'Соль',          unit:'g',   per:4},
-//     {name:'Специи',        unit:'g',   per:2},
-//     {name:'Лимонная кислота', unit:'g', per:1},
-//     {name:'Лавровый лист', unit:'pcs', per:1},
-//   ]},
-// ];
-
-const DEFAULT_MEALS = {breakfast:true, lunch:true, snack:false, dinner:true};
-
-let state = load() || {
-  people: 2,
-  days: [],
-  currentDay: 0,
-};
-
-function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-function load(){
-  try{ return JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ return null; }
-}
-
-function formatAmount(amount, unit){
-  if(unit==='g' || unit==='kg'){
-    if(amount >= 1000){
-      const kg = amount/1000;
-      return (Number.isInteger(kg)?kg:kg.toFixed(2).replace(/\.?0+$/,''))+' кг';
+    function save() { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+    function load() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { return null; }
     }
-    return Math.round(amount)+' г';
-  }
-  const u = UNITS[unit]||unit;
-  const v = Number.isInteger(amount)?amount:amount.toFixed(2).replace(/\.?0+$/,'');
-  return v+' '+u;
-}
 
-function buildNameDict(){
-  const dict = {};
-  state.days.forEach(d=>{
-    MEALS.forEach(m=>{
-      (d.meals[m.id]||[]).forEach(item=>{
-        const key = (item.name||'').trim().toLowerCase();
-        if(key && !dict[key]) dict[key] = {display:item.name.trim(), unit:item.unit};
+    function formatAmount(amount, unit) {
+      if (unit === 'g' || unit === 'kg') {
+        if (amount >= 1000) {
+          const kg = amount / 1000;
+          return (Number.isInteger(kg) ? kg : kg.toFixed(2).replace(/\.?0+$/, '')) + ' кг';
+        }
+        return Math.round(amount) + ' г';
+      }
+      const u = UNITS[unit] || unit;
+      const v = Number.isInteger(amount) ? amount : amount.toFixed(2).replace(/\.?0+$/, '');
+      return v + ' ' + u;
+    }
+
+    function buildNameDict() {
+      const dict = {};
+      state.days.forEach(d => {
+        MEALS.forEach(m => {
+          (d.meals[m.id] || []).forEach(item => {
+            const key = (item.name || '').trim().toLowerCase();
+            if (key && !dict[key]) dict[key] = { display: item.name.trim(), unit: item.unit };
+          });
+        });
       });
+      return dict;
+    }
+
+    function updateSuggestions() {
+      const dict = buildNameDict();
+      document.getElementById('nameSuggestions').innerHTML =
+        Object.values(dict).map(v => `<option value="${escapeAttr(v.display)}">`).join('');
+    }
+
+    function makeDay(activeMeals) {
+      const am = Object.assign({}, DEFAULT_MEALS, activeMeals || {});
+      const meals = {};
+      MEALS.forEach(m => meals[m.id] = []);
+      const firstActive = MEALS.find(m => am[m.id]);
+      return { activeMeals: am, meals, currentMeal: firstActive?.id || 'breakfast', mealMeta: {} };
+    }
+
+    function syncDaysCount(n) {
+      n = Math.max(0, n | 0);
+      while (state.days.length < n) {
+        const prev = state.days[state.days.length - 1];
+        state.days.push(makeDay(prev?.activeMeals));
+      }
+      while (state.days.length > n) state.days.pop();
+      if (state.currentDay >= state.days.length)
+        state.currentDay = Math.max(0, state.days.length - 1);
+    }
+
+    function renderCheatSheet(filter = '') {
+      const host = document.getElementById('cheatList');
+      const q = filter.trim().toLowerCase();
+      let html = '';
+      if (typeof TYPICAL !== 'undefined') {
+        TYPICAL.forEach(cat => {
+          const items = cat.items.filter(it => !q || it.name.toLowerCase().includes(q));
+          if (!items.length) return;
+          html += `<div class="cheat-cat">${cat.cat}</div>`;
+          items.forEach(it => {
+            html += `<div class="cheat-item" data-name="${escapeAttr(it.name)}" data-unit="${it.unit}" data-per="${it.per}">
+          <span class="nm">${it.name}</span>
+          <span class="dose">${it.per} ${UNITS[it.unit]}</span>
+        </div>`;
+          });
+        });
+      }
+      if (!html) html = '<div class="empty">Ничего не найдено</div>';
+      host.innerHTML = html;
+    }
+
+    document.getElementById('cheatSearch').addEventListener('input', e => {
+      renderCheatSheet(e.target.value);
     });
-  });
-  return dict;
-}
 
-function updateSuggestions(){
-  const dict = buildNameDict();
-  document.getElementById('nameSuggestions').innerHTML =
-    Object.values(dict).map(v=>`<option value="${escapeAttr(v.display)}">`).join('');
-}
+    document.getElementById('cheatList').addEventListener('click', e => {
+      const el = e.target.closest('.cheat-item');
+      if (!el) return;
+      addFromCheat(el.dataset.name, el.dataset.unit, parseFloat(el.dataset.per));
+      el.classList.add('added');
+      setTimeout(() => el.classList.remove('added'), 400);
+    });
 
-function makeDay(activeMeals){
-  const am = Object.assign({}, DEFAULT_MEALS, activeMeals||{});
-  const meals = {};
-  MEALS.forEach(m=> meals[m.id] = []);
-  const firstActive = MEALS.find(m=>am[m.id]);
-  return {activeMeals: am, meals, currentMeal: firstActive?.id || 'breakfast'};
-}
+    function addFromCheat(name, unit, per) {
+      if (!state.days.length) {
+        showToast('Сначала добавьте хотя бы один день');
+        return;
+      }
+      const day = state.days[state.currentDay];
+      const activeMeal = MEALS.find(m => m.id === day.currentMeal && day.activeMeals[m.id]);
+      if (!activeMeal) {
+        showToast('Нет активного приёма пищи');
+        return;
+      }
+      const amount = Math.round(per * state.people * 100) / 100;
+      day.meals[activeMeal.id].push({ name, unit, amount, perPerson: per });
+      save();
+      render();
+      showToast(`+ ${name} → ${activeMeal.name} (${formatAmount(amount, unit)})`);
+    }
 
-function syncDaysCount(n){
-  n = Math.max(0, n|0);
-  while(state.days.length < n){
-    const prev = state.days[state.days.length-1];
-    state.days.push(makeDay(prev?.activeMeals));
-  }
-  while(state.days.length > n) state.days.pop();
-  if(state.currentDay >= state.days.length)
-    state.currentDay = Math.max(0, state.days.length-1);
-}
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._tm);
+      t._tm = setTimeout(() => t.classList.remove('show'), 2200);
+    }
 
-function renderCheatSheet(filter=''){
-  const host = document.getElementById('cheatList');
-  const q = filter.trim().toLowerCase();
-  let html = '';
-  TYPICAL.forEach(cat=>{
-    const items = cat.items.filter(it=> !q || it.name.toLowerCase().includes(q));
-    if(!items.length) return;
-    html += `<div class="cheat-cat">${cat.cat}</div>`;
-    items.forEach(it=>{
-      html += `<div class="cheat-item" data-name="${escapeAttr(it.name)}" data-unit="${it.unit}" data-per="${it.per}">
-        <span class="nm">${it.name}</span>
-        <span class="dose">${it.per} ${UNITS[it.unit]}</span>
+    function render() {
+      document.getElementById('people').value = state.people;
+      document.getElementById('daysCount').value = state.days.length;
+      document.getElementById('tripComment').value = state.comment || '';
+
+      const tabs = document.getElementById('daysTabs');
+      tabs.innerHTML = state.days.map((_, i) =>
+        `<div class="day-tab ${i === state.currentDay ? 'active' : ''}" data-day="${i}">День ${i + 1}</div>`
+      ).join('');
+
+      document.getElementById('dayTitle').textContent =
+        state.days.length ? `День ${state.currentDay + 1}` : '';
+
+      renderMealsForDay();
+      renderDay();
+      updateSuggestions();
+      renderTotals();
+    }
+
+    function renderMealsForDay() {
+      const host = document.getElementById('mealsForDay');
+      if (!state.days.length) { host.innerHTML = ''; return; }
+      const day = state.days[state.currentDay];
+      host.innerHTML = MEALS.map(m => {
+        const on = day.activeMeals[m.id];
+        return `<label class="check ${on ? 'on' : ''}">
+        <input type="checkbox" data-meal="${m.id}" ${on ? 'checked' : ''}> ${m.name}
+      </label>`;
+      }).join('');
+    }
+
+    function renderDay() {
+      const host = document.getElementById('dayContent');
+      if (!state.days.length) {
+        host.innerHTML = '<div class="empty">Нет дней. Укажите количество дней выше.</div>';
+        return;
+      }
+      const day = state.days[state.currentDay];
+      const activeMeals = MEALS.filter(m => day.activeMeals[m.id]);
+      if (!activeMeals.length) {
+        host.innerHTML = '<div class="empty">В этом дне не выбрано ни одного приёма пищи.</div>';
+        return;
+      }
+
+      host.innerHTML = activeMeals.map(m => {
+        const items = day.meals[m.id] || [];
+        const mealData = day.mealMeta?.[m.id] || { time: '', km: '', waterPerPerson: '' };
+        const isActive = day.currentMeal === m.id;
+
+        const waterPerPerson = parseFloat(mealData.waterPerPerson) || 0;
+        const totalWater = (waterPerPerson * state.people).toFixed(1).replace(/\.0$/, '');
+
+        const rows = items.map((it, idx) => `
+        <tr>
+          <td><input type="text" list="nameSuggestions"
+            data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="name"
+            value="${escapeAttr(it.name)}" placeholder="Продукт"></td>
+          <td><input type="number" min="0" step="any"
+            data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="amount"
+            value="${it.amount || ''}" placeholder="Кол-во"></td>
+          <td><select data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="unit">
+            ${Object.entries(UNITS).map(([k, v]) => `<option value="${k}" ${it.unit === k ? 'selected' : ''}>${v}</option>`).join('')}
+          </select></td>
+          <td><button class="danger" data-del-day="${state.currentDay}" data-del-meal="${m.id}" data-del-idx="${idx}">✕</button></td>
+        </tr>
+      `).join('');
+
+        return `<div class="meal-block ${isActive ? 'active' : ''}" data-meal="${m.id}">
+        <div class="meal-header">
+          <span class="meal-title">${m.name}</span>
+        </div>
+        <div class="meal-meta" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <label>Время: <input type="time" data-meta-day="${state.currentDay}" data-meta-meal="${m.id}" data-meta-f="time" value="${mealData.time}"></label>
+          <label>Км: <input type="text" data-meta-day="${state.currentDay}" data-meta-meal="${m.id}" data-meta-f="km" value="${escapeAttr(mealData.km)}" placeholder="12.5" style="width:70px"></label>
+          <label title="Вода на одного человека">Вода/чел (л): <input type="number" step="0.1" min="0" data-meta-day="${state.currentDay}" data-meta-meal="${m.id}" data-meta-f="waterPerPerson" value="${mealData.waterPerPerson || ''}" placeholder="1" style="width:70px"></label>
+          ${waterPerPerson > 0 ? `<span style="align-self:center; color:#666; font-size:0.9em;">(Всего: <b>${totalWater} л</b>)</span>` : ''}
+        </div>
+        <div class="meal-content">
+          ${items.length ? `<table class="products-table">
+            <thead><tr><th>Продукт</th><th style="width:90px">Кол-во</th><th style="width:90px">Ед.</th><th style="width:40px"></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>` : '<div class="empty" style="padding:4px 0">Пока пусто</div>'}
+          <button class="add-btn primary" data-add-day="${state.currentDay}" data-add-meal="${m.id}">+ Добавить продукт</button>
+          ${items.length ? `<div class="meal-subtotal">В этом приёме: ${mealSubtotal(items)}</div>` : ''}
+        </div>
       </div>`;
-    });
-  });
-  if(!html) html = '<div class="empty">Ничего не найдено</div>';
-  host.innerHTML = html;
-}
+      }).join('');
+    }
 
-document.getElementById('cheatSearch').addEventListener('input', e=>{
-  renderCheatSheet(e.target.value);
-});
-
-document.getElementById('cheatList').addEventListener('click', e=>{
-  const el = e.target.closest('.cheat-item');
-  if(!el) return;
-  addFromCheat(el.dataset.name, el.dataset.unit, parseFloat(el.dataset.per));
-  el.classList.add('added');
-  setTimeout(()=>el.classList.remove('added'), 400);
-});
-
-function addFromCheat(name, unit, per){
-  if(!state.days.length){
-    showToast('Сначала добавьте хотя бы один день');
-    return;
-  }
-  const day = state.days[state.currentDay];
-  const activeMeal = MEALS.find(m=>m.id===day.currentMeal && day.activeMeals[m.id]);
-  if(!activeMeal){
-    showToast('Нет активного приёма пищи');
-    return;
-  }
-  const amount = Math.round(per * state.people * 100) / 100;
-  day.meals[activeMeal.id].push({name, unit, amount, perPerson: per});
-  save();
-  render();
-  showToast(`+ ${name} → ${activeMeal.name} (${formatAmount(amount, unit)})`);
-}
-
-function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._tm);
-  t._tm = setTimeout(()=>t.classList.remove('show'), 2200);
-}
-
-function render(){
-  document.getElementById('people').value = state.people;
-  document.getElementById('daysCount').value = state.days.length;
-
-  const tabs = document.getElementById('daysTabs');
-  tabs.innerHTML = state.days.map((_,i)=>
-    `<div class="day-tab ${i===state.currentDay?'active':''}" data-day="${i}">День ${i+1}</div>`
-  ).join('');
-
-  document.getElementById('dayTitle').textContent =
-    state.days.length? `День ${state.currentDay+1}` : '';
-
-  renderMealsForDay();
-  renderDay();
-  updateSuggestions();
-  renderTotals();
-}
-
-function renderMealsForDay(){
-  const host = document.getElementById('mealsForDay');
-  if(!state.days.length){ host.innerHTML=''; return; }
-  const day = state.days[state.currentDay];
-  host.innerHTML = MEALS.map(m=>{
-    const on = day.activeMeals[m.id];
-    return `<label class="check ${on?'on':''}">
-      <input type="checkbox" data-meal="${m.id}" ${on?'checked':''}> ${m.name}
-    </label>`;
-  }).join('');
-}
-
-function renderDay(){
-  const host = document.getElementById('dayContent');
-  if(!state.days.length){
-    host.innerHTML = '<div class="empty">Нет дней. Укажите количество дней выше.</div>';
-    return;
-  }
-  const day = state.days[state.currentDay];
-  const activeMeals = MEALS.filter(m=>day.activeMeals[m.id]);
-  if(!activeMeals.length){
-    host.innerHTML = '<div class="empty">В этом дне не выбрано ни одного приёма пищи.</div>';
-    return;
-  }
-
-  host.innerHTML = activeMeals.map(m=>{
-    const items = day.meals[m.id] || [];
-    const mealData = day.mealMeta?.[m.id] || {time:'', km:''};
-    const isActive = day.currentMeal === m.id;
-    
-    const rows = items.map((it,idx)=>`
-      <tr>
-        <td><input type="text" list="nameSuggestions"
-          data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="name"
-          value="${escapeAttr(it.name)}" placeholder="Продукт"></td>
-        <td><input type="number" min="0" step="any"
-          data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="amount"
-          value="${it.amount||''}" placeholder="Кол-во"></td>
-        <td><select data-day="${state.currentDay}" data-meal="${m.id}" data-idx="${idx}" data-f="unit">
-          ${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${it.unit===k?'selected':''}>${v}</option>`).join('')}
-        </select></td>
-        <td><button class="danger" data-del-day="${state.currentDay}" data-del-meal="${m.id}" data-del-idx="${idx}">✕</button></td>
-      </tr>
-    `).join('');
-
-    return `<div class="meal-block ${isActive?'active':''}" data-meal="${m.id}">
-      <div class="meal-header">
-        <span class="meal-title">${m.name}</span>
-        
-      </div>
-      <div class="meal-meta">
-        <label>Время: <input type="time" data-meta-day="${state.currentDay}" data-meta-meal="${m.id}" data-meta-f="time" value="${mealData.time}"></label>
-        <label>Км: <input type="text" data-meta-day="${state.currentDay}" data-meta-meal="${m.id}" data-meta-f="km" value="${escapeAttr(mealData.km)}" placeholder="12.5" style="width:100px"></label>
-      </div>
-      <div class="meal-content">
-        ${items.length? `<table class="products-table">
-          <thead><tr><th>Продукт</th><th style="width:90px">Кол-во</th><th style="width:90px">Ед.</th><th style="width:40px"></th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>` : '<div class="empty" style="padding:4px 0">Пока пусто</div>'}
-        <button class="add-btn primary" data-add-day="${state.currentDay}" data-add-meal="${m.id}">+ Добавить продукт</button>
-        ${items.length? `<div class="meal-subtotal">В этом приёме: ${mealSubtotal(items)}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function mealSubtotal(items){
-  const byUnit = {};
-  items.forEach(it=>{
-    const a = Number(it.amount)||0;
-    if(a<=0) return;
-    let u = it.unit, v = a;
-    if(u==='kg'){ u='g'; v=a*1000; }
-    byUnit[u] = (byUnit[u]||0) + v;
-  });
-  return Object.entries(byUnit)
-    .map(([u,v])=>formatAmount(v, u))
-    .join('<br>') || '—';
-}
-
-function renderTotals(){
-  const host = document.getElementById('totals');
-  const sums = {};
-  state.days.forEach(d=>{
-    MEALS.forEach(m=>{
-      if(!d.activeMeals[m.id]) return;
-      (d.meals[m.id]||[]).forEach(it=>{
-        const name = (it.name||'').trim();
-        if(!name) return;
-        const a = Number(it.amount)||0;
-        if(a<=0) return;
-        const key = name.toLowerCase() + '|' + it.unit;
-        if(!sums[key]) sums[key] = {name, unit:it.unit, amount:0};
-        sums[key].amount += a;
+    function mealSubtotal(items) {
+      const byUnit = {};
+      items.forEach(it => {
+        const a = Number(it.amount) || 0;
+        if (a <= 0) return;
+        let u = it.unit, v = a;
+        if (u === 'kg') { u = 'g'; v = a * 1000; }
+        byUnit[u] = (byUnit[u] || 0) + v;
       });
-    });
-  });
+      return Object.entries(byUnit)
+        .map(([u, v]) => formatAmount(v, u))
+        .join('<br>') || '—';
+    }
 
-  const rows = Object.values(sums).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
-  if(!rows.length){
-    host.innerHTML = '<div class="empty">Заполните раскладку — итоги появятся здесь.</div>';
-    return;
-  }
+    function renderTotals() {
+      const host = document.getElementById('totals');
+      const sums = {};
+      let totalWaterVolume = 0;
 
-  host.innerHTML = rows.map(r=>{
-    const perPerson = state.people? r.amount/state.people : 0;
-    return `<div class="total-row">
-      <span>${escapeHtml(r.name)}
-        <span class="per-person">по ${formatAmount(perPerson, r.unit)} / чел</span>
-      </span>
-      <b>${formatAmount(r.amount, r.unit)}</b>
-    </div>`;
-  }).join('');
-}
+      state.days.forEach(d => {
+        MEALS.forEach(m => {
+          if (!d.activeMeals[m.id]) return;
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-function escapeAttr(s){ return escapeHtml(s); }
+          const mealMeta = d.mealMeta?.[m.id];
+          if (mealMeta && mealMeta.waterPerPerson) {
+            totalWaterVolume += (parseFloat(mealMeta.waterPerPerson) || 0) * state.people;
+          }
 
-function generatePrintTable(){
-  const printInfo = document.getElementById('printInfo');
-  const printTable = document.getElementById('printTable');
-  
-  printInfo.innerHTML = `
+          (d.meals[m.id] || []).forEach(it => {
+            const name = (it.name || '').trim();
+            if (!name) return;
+            const a = Number(it.amount) || 0;
+            if (a <= 0) return;
+            const key = name.toLowerCase() + '|' + it.unit;
+            if (!sums[key]) sums[key] = { name, unit: it.unit, amount: 0 };
+            sums[key].amount += a;
+          });
+        });
+      });
+
+      const rows = Object.values(sums).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+
+      let html = '';
+
+      if (rows.length || totalWaterVolume > 0) {
+        html = rows.map(r => {
+          const perPerson = state.people ? r.amount / state.people : 0;
+          return `<div class="total-row">
+            <span>${escapeHtml(r.name)}
+              <span class="per-person">по ${formatAmount(perPerson, r.unit)} / чел</span>
+            </span>
+            <b>${formatAmount(r.amount, r.unit)}</b>
+          </div>`;
+        }).join('');
+
+        if (totalWaterVolume > 0) {
+          const totalGasGrams = totalWaterVolume * GAS_PER_LITER;
+          const gasBallons230 = Math.ceil(totalGasGrams / 230);
+
+          html += `<hr style="margin: 12px 0; border:none; border-top: 1px dashed #ccc;"/>`;
+          html += `<div class="total-row" style="color: #0066cc;">
+            <span>Общий объем нужной воды:</span>
+            <b>${totalWaterVolume.toFixed(1).replace(/\.0$/, '')} л</b>
+          </div>`;
+          html += `<div class="total-row" style="color: #2e7d32;" title="Из расчета ${GAS_PER_LITER}г на 1л воды">
+            <span>Газ туристический (всего):<br><small style="color:#666">~ ${gasBallons230} шт резьбовых баллонов по 230г</small></span>
+            <b>${formatAmount(totalGasGrams, 'g')}</b>
+          </div>`;
+        }
+      } else {
+        html = '<div class="empty">Заполните раскладку — итоги появятся здесь.</div>';
+      }
+
+      host.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    function generatePrintTable() {
+      const printInfo = document.getElementById('printInfo');
+      const printTable = document.getElementById('printTable');
+
+      // Шапка печатного инфо-блока
+      let infoHtml = `
     <strong>Количество человек:</strong> ${state.people}<br>
     <strong>Дней:</strong> ${state.days.length}<br>
     <strong>Дата формирования:</strong> ${new Date().toLocaleDateString('ru-RU')}
   `;
 
-  let html = '';
+      // КОММЕНТАРИЙ ПЕРЕНЕСЕН НАВЕРХ (выводится под полем "Дата формирования")
+      if (state.comment && state.comment.trim() !== '') {
+        infoHtml += `<div class="print-comment-block" style="margin-top: 14px; padding: 10px; border: 1px solid #aaa; background: #fafafa; border-radius: 4px; max-width: 100%;">`;
+        infoHtml += `<strong style="display: block; margin-bottom: 4px;">Примечания к походу:</strong>`;
+        infoHtml += `<div style="white-space: pre-wrap; font-size: 0.95em; line-height: 1.4; color: #333;">${escapeHtml(state.comment)}</div>`;
+        infoHtml += `</div>`;
+      }
 
-  // Каждый день - отдельная таблица
-  state.days.forEach((day, dayIdx)=>{
-    const activeMeals = MEALS.filter(m=>day.activeMeals[m.id]);
-    
-    // Заголовок дня
-    html += `<h2 class="day-header">День ${dayIdx + 1}</h2>`;
-    
-    // Таблица для этого дня
-    html += '<table class="day-table"><thead><tr>'+
-      '<th style="width:120px">Приём пищи</th>'+
-      '<th style="width:80px">Время</th>'+
-      '<th style="width:60px">Км</th>'+
-      '<th>Продукты</th>'+
-      '<th style="width:120px">Итого</th>'+
-    '</tr></thead><tbody>';
-    
-    activeMeals.forEach(m=>{
-      const items = day.meals[m.id] || [];
-      const meta = day.mealMeta?.[m.id] || {time:'', km:''};
-      
-      html += `<tr>
+      printInfo.innerHTML = infoHtml;
+
+      let html = '';
+      let totalWaterVolume = 0;
+
+      state.days.forEach((day, dayIdx) => {
+        const activeMeals = MEALS.filter(m => day.activeMeals[m.id]);
+
+        html += `<h2 class="day-header">День ${dayIdx + 1}</h2>`;
+        html += '<table class="day-table"><thead><tr>' +
+          '<th style="width:120px">Приём пищи</th>' +
+          '<th style="width:80px">Время</th>' +
+          '<th style="width:60px">Км</th>' +
+          '<th style="width:80px">Вода (общ)</th>' +
+          '<th>Продукты</th>' +
+          '<th style="width:120px">Итого</th>' +
+          '</tr></thead><tbody>';
+
+        activeMeals.forEach(m => {
+          const items = day.meals[m.id] || [];
+          const meta = day.mealMeta?.[m.id] || { time: '', km: '', waterPerPerson: '' };
+          const mealWater = (parseFloat(meta.waterPerPerson) || 0) * state.people;
+          totalWaterVolume += mealWater;
+
+          html += `<tr>
         <td class="meal-name">${m.name}</td>
         <td>${meta.time || '—'}</td>
         <td>${meta.km || '—'}</td>
+        <td>${mealWater > 0 ? mealWater.toFixed(1) + ' л' : '—'}</td>
         <td class="products">`;
-      
-      if(items.length){
-        items.forEach(it=>{
-          const amount = it.amount ? `${it.amount} ${UNITS[it.unit]}` : '';
-          html += `<div>${escapeHtml(it.name || '—')}: ${amount}</div>`;
-        });
-      } else {
-        html += '—';
-      }
-      
-      html += `</td>
+
+          if (items.length) {
+            items.forEach(it => {
+              const amount = it.amount ? `${it.amount} ${UNITS[it.unit]}` : '';
+              html += `<div>${escapeHtml(it.name || '—')}: ${amount}</div>`;
+            });
+          } else {
+            html += '—';
+          }
+
+          html += `</td>
         <td>${items.length ? mealSubtotal(items) : '—'}</td>
       </tr>`;
-    });
+        });
 
-    html += '</tbody></table>';
-  });
-  
-  // Общий список продуктов
-  html += '<h2 class="day-header" style="margin-top:40px">Общий список продуктов</h2>';
-  html += '<table class="day-table"><thead><tr><th>Продукт</th><th>Ед.</th><th>Всего</th><th>На человека</th></tr></thead><tbody>';
-  
-  const sums = {};
-  state.days.forEach(d=>{
-    MEALS.forEach(m=>{
-      if(!d.activeMeals[m.id]) return;
-      (d.meals[m.id]||[]).forEach(it=>{
-        const name = (it.name||'').trim();
-        if(!name) return;
-        const a = Number(it.amount)||0;
-        if(a<=0) return;
-        const key = name.toLowerCase() + '|' + it.unit;
-        if(!sums[key]) sums[key] = {name, unit:it.unit, amount:0};
-        sums[key].amount += a;
+        html += '</tbody></table>';
       });
-    });
-  });
 
-  Object.values(sums).sort((a,b)=>a.name.localeCompare(b.name,'ru')).forEach(r=>{
-    const perPerson = state.people? r.amount/state.people : 0;
-    html += `<tr>
+      // Общий список продуктов для печати
+      html += '<h2 class="day-header" style="margin-top:40px">Общий список продуктов</h2>';
+      html += '<table class="day-table"><thead><tr><th>Наименование</th><th>Всего</th><th>На человека</th></tr></thead><tbody>';
+
+      const sums = {};
+      state.days.forEach(d => {
+        MEALS.forEach(m => {
+          if (!d.activeMeals[m.id]) return;
+          (d.meals[m.id] || []).forEach(it => {
+            const name = (it.name || '').trim();
+            if (!name) return;
+            const a = Number(it.amount) || 0;
+            if (a <= 0) return;
+            const key = name.toLowerCase() + '|' + it.unit;
+            if (!sums[key]) sums[key] = { name, unit: it.unit, amount: 0 };
+            sums[key].amount += a;
+          });
+        });
+      });
+
+      Object.values(sums).sort((a, b) => a.name.localeCompare(b.name, 'ru')).forEach(r => {
+        const perPerson = state.people ? r.amount / state.people : 0;
+        html += `<tr>
       <td>${escapeHtml(r.name)}</td>
-      <td>${UNITS[r.unit]}</td>
       <td><b>${formatAmount(r.amount, r.unit)}</b></td>
       <td>${formatAmount(perPerson, r.unit)}</td>
     </tr>`;
-  });
-
-  html += '</tbody></table>';
-  printTable.innerHTML = html;
-}
-
-document.getElementById('people').addEventListener('input', e=>{
-  const newPeople = Math.max(1, parseInt(e.target.value)||1);
-  const oldPeople = state.people;
-  state.people = newPeople;
-  
-  // Пересчитываем количества продуктов
-  if(oldPeople !== newPeople){
-    state.days.forEach(d=>{
-      MEALS.forEach(m=>{
-        (d.meals[m.id]||[]).forEach(it=>{
-          if(it.perPerson !== undefined){
-            it.amount = Math.round(it.perPerson * newPeople * 100) / 100;
-          }
-        });
       });
+
+      if (totalWaterVolume > 0) {
+        html += `<tr style="background-color: #f9f9f9;">
+          <td><b>Вода (общий объем для готовки)</b></td>
+          <td><b>${totalWaterVolume.toFixed(1).replace(/\.0$/, '')} л</b></td>
+          <td>${(totalWaterVolume / state.people).toFixed(1).replace(/\.0$/, '')} л</td>
+        </tr>`;
+      }
+
+      if (totalWaterVolume > 0) {
+        const totalGasGrams = totalWaterVolume * GAS_PER_LITER;
+        html += `<tr>
+          <td><b>Газ туристический (расчетный)</b></td>
+          <td><b>${formatAmount(totalGasGrams, 'g')}</b></td>
+          <td>${formatAmount(totalGasGrams / state.people, 'g')}</td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+      printTable.innerHTML = html;
+    }
+
+    document.getElementById('tripComment').addEventListener('input', e => {
+      state.comment = e.target.value;
+      save();
     });
-  }
-  
-  save(); render();
-});
-document.getElementById('daysCount').addEventListener('input', e=>{
-  syncDaysCount(parseInt(e.target.value)||0);
-  save(); render();
-});
 
-document.getElementById('mealsForDay').addEventListener('change', e=>{
-  const t = e.target;
-  if(!t.dataset.meal || !state.days.length) return;
-  state.days[state.currentDay].activeMeals[t.dataset.meal] = t.checked;
-  save(); render();
-});
+    document.getElementById('people').addEventListener('input', e => {
+      const newPeople = Math.max(1, parseInt(e.target.value) || 1);
+      const oldPeople = state.people;
+      state.people = newPeople;
 
-document.getElementById('daysTabs').addEventListener('click', e=>{
-  const t = e.target.closest('.day-tab');
-  if(!t) return;
-  state.currentDay = parseInt(t.dataset.day);
-  render();
-});
+      if (oldPeople !== newPeople) {
+        state.days.forEach(d => {
+          MEALS.forEach(m => {
+            (d.meals[m.id] || []).forEach(it => {
+              if (it.perPerson !== undefined) {
+                it.amount = Math.round(it.perPerson * newPeople * 100) / 100;
+              }
+            });
+          });
+        });
+      }
 
-document.getElementById('dayContent').addEventListener('click', e=>{
-  // Активация приёма пищи — по всему блоку, кроме input/select/button
-  if(!e.target.closest('input,select,button,a')){
-    const block = e.target.closest('.meal-block');
-    if(block){
-      const m = block.dataset.meal;
-      if(state.days[state.currentDay].currentMeal !== m){
-        state.days[state.currentDay].currentMeal = m;
-        save();
-        renderDay();
+      save(); render();
+    });
+    document.getElementById('daysCount').addEventListener('input', e => {
+      syncDaysCount(parseInt(e.target.value) || 0);
+      save(); render();
+    });
+
+    document.getElementById('mealsForDay').addEventListener('change', e => {
+      const t = e.target;
+      if (!t.dataset.meal || !state.days.length) return;
+      state.days[state.currentDay].activeMeals[t.dataset.meal] = t.checked;
+      save(); render();
+    });
+
+    document.getElementById('daysTabs').addEventListener('click', e => {
+      const t = e.target.closest('.day-tab');
+      if (!t) return;
+      state.currentDay = parseInt(t.dataset.day);
+      render();
+    });
+
+    document.getElementById('dayContent').addEventListener('click', e => {
+      if (!e.target.closest('input,select,button,a,textarea')) {
+        const block = e.target.closest('.meal-block');
+        if (block) {
+          const m = block.dataset.meal;
+          if (state.days[state.currentDay].currentMeal !== m) {
+            state.days[state.currentDay].currentMeal = m;
+            save();
+            renderDay();
+            return;
+          }
+        }
+      }
+
+      const add = e.target.closest('[data-add-meal]');
+      if (add) {
+        const d = parseInt(add.dataset.addDay);
+        const m = add.dataset.addMeal;
+        state.days[d].meals[m].push({ name: '', unit: 'g', amount: '' });
+        state.days[d].currentMeal = m;
+        save(); render();
+        setTimeout(() => {
+          const inputs = document.querySelectorAll(
+            `input[data-day="${d}"][data-meal="${m}"][data-f="name"]`);
+          inputs[inputs.length - 1]?.focus();
+        }, 0);
         return;
       }
-    }
-  }
-  
-  const add = e.target.closest('[data-add-meal]');
-  if(add){
-    const d = parseInt(add.dataset.addDay);
-    const m = add.dataset.addMeal;
-    state.days[d].meals[m].push({name:'', unit:'g', amount:''});
-    state.days[d].currentMeal = m;
-    save(); render();
-    setTimeout(()=>{
-      const inputs = document.querySelectorAll(
-        `input[data-day="${d}"][data-meal="${m}"][data-f="name"]`);
-      inputs[inputs.length-1]?.focus();
-    },0);
-    return;
-  }
-  const del = e.target.closest('[data-del-idx]');
-  if(del){
-    const d = parseInt(del.dataset.delDay);
-    const m = del.dataset.delMeal;
-    const i = parseInt(del.dataset.delIdx);
-    state.days[d].meals[m].splice(i,1);
-    save(); render();
-  }
-});
-
-document.getElementById('dayContent').addEventListener('input', e=>{
-  const t = e.target;
-  
-  if(t.dataset.metaF){
-    const d = parseInt(t.dataset.metaDay);
-    const m = t.dataset.metaMeal;
-    if(!state.days[d].mealMeta) state.days[d].mealMeta = {};
-    if(!state.days[d].mealMeta[m]) state.days[d].mealMeta[m] = {time:'', km:''};
-    state.days[d].mealMeta[m][t.dataset.metaF] = t.value;
-    save();
-    return;
-  }
-  
-  if(!t.dataset.f) return;
-  const d = parseInt(t.dataset.day);
-  const m = t.dataset.meal;
-  const i = parseInt(t.dataset.idx);
-  const item = state.days[d].meals[m][i];
-  if(!item) return;
-
-  if(t.dataset.f==='name'){
-    item.name = t.value;
-    const dict = buildNameDict();
-    const key = t.value.trim().toLowerCase();
-    if(dict[key] && item.unit !== dict[key].unit){
-      item.unit = dict[key].unit;
-      save(); render();
-      return;
-    }
-  } else if(t.dataset.f==='amount'){
-    const newAmount = t.value===''? '' : parseFloat(t.value);
-    item.amount = newAmount;
-    // Обновляем perPerson при ручном изменении количества
-    if(newAmount !== '' && state.people > 0){
-      item.perPerson = newAmount / state.people;
-    }
-  } else if(t.dataset.f==='unit'){
-    item.unit = t.value;
-  }
-  save();
-  renderTotals();
-  updateSubtotals();
-});
-
-function updateSubtotals(){
-  if(!state.days.length) return;
-  const day = state.days[state.currentDay];
-  document.querySelectorAll('.meal-block').forEach(block=>{
-    const mealId = block.dataset.meal;
-    if(!mealId) return;
-    const items = day.meals[mealId] || [];
-    let sub = block.querySelector('.meal-subtotal');
-    if(items.length){
-      const text = 'В этом приёме: ' + mealSubtotal(items);
-      if(sub) sub.textContent = text;
-      else {
-        sub = document.createElement('div');
-        sub.className = 'meal-subtotal';
-        sub.textContent = text;
-        block.querySelector('.meal-content').appendChild(sub);
+      const del = e.target.closest('[data-del-idx]');
+      if (del) {
+        const d = parseInt(del.dataset.delDay);
+        const m = del.dataset.delMeal;
+        const i = parseInt(del.dataset.delIdx);
+        state.days[d].meals[m].splice(i, 1);
+        save(); render();
       }
-    } else if(sub){
-      sub.remove();
+    });
+
+    document.getElementById('dayContent').addEventListener('input', e => {
+      const t = e.target;
+
+      if (t.dataset.metaF) {
+        const d = parseInt(t.dataset.metaDay);
+        const m = t.dataset.metaMeal;
+        if (!state.days[d].mealMeta) state.days[d].mealMeta = {};
+        if (!state.days[d].mealMeta[m]) state.days[d].mealMeta[m] = { time: '', km: '', waterPerPerson: '' };
+
+        state.days[d].mealMeta[m][t.dataset.metaF] = t.value;
+        save();
+
+        if (t.dataset.metaF === 'waterPerPerson') {
+          render();
+        }
+        return;
+      }
+
+      if (!t.dataset.f) return;
+      const d = parseInt(t.dataset.day);
+      const m = t.dataset.meal;
+      const i = parseInt(t.dataset.idx);
+      const item = state.days[d].meals[m][i];
+      if (!item) return;
+
+      if (t.dataset.f === 'name') {
+        item.name = t.value;
+        const dict = buildNameDict();
+        const key = t.value.trim().toLowerCase();
+        if (dict[key] && item.unit !== dict[key].unit) {
+          item.unit = dict[key].unit;
+          save(); render();
+          return;
+        }
+      } else if (t.dataset.f === 'amount') {
+        const newAmount = t.value === '' ? '' : parseFloat(t.value);
+        item.amount = newAmount;
+        if (newAmount !== '' && state.people > 0) {
+          item.perPerson = newAmount / state.people;
+        }
+      } else if (t.dataset.f === 'unit') {
+        item.unit = t.value;
+      }
+      save();
+      renderTotals();
+      updateSubtotals();
+    });
+
+    function updateSubtotals() {
+      if (!state.days.length) return;
+      const day = state.days[state.currentDay];
+      document.querySelectorAll('.meal-block').forEach(block => {
+        const mealId = block.dataset.meal;
+        if (!mealId) return;
+        const items = day.meals[mealId] || [];
+        let sub = block.querySelector('.meal-subtotal');
+        if (items.length) {
+          const text = 'В этом приёме: ' + mealSubtotal(items);
+          if (sub) sub.textContent = text;
+          else {
+            sub = document.createElement('div');
+            sub.className = 'meal-subtotal';
+            sub.textContent = text;
+            block.querySelector('.meal-content').appendChild(sub);
+          }
+        } else if (sub) {
+          sub.remove();
+        }
+      });
     }
-  });
-}
 
-document.getElementById('printBtn').addEventListener('click', ()=>{
-  generatePrintTable();
-  window.print();
-});
+    document.getElementById('printBtn').addEventListener('click', () => {
+      generatePrintTable();
+      window.print();
+    });
 
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'raskladka.json';
-  a.click();
-});
-document.getElementById('importBtn').addEventListener('click', ()=>{
-  document.getElementById('importFile').click();
-});
-document.getElementById('importFile').addEventListener('change', e=>{
-  const f = e.target.files[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = ()=>{
-    try{
-      const data = JSON.parse(r.result);
-      if(!data.days) throw 0;
-      state = data;
-      save(); render();
-    }catch(err){ alert('Невалидный файл'); }
-  };
-  r.readAsText(f);
-  e.target.value='';
-});
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(!confirm('Удалить всю раскладку?')) return;
-  localStorage.removeItem(LS_KEY);
-  location.reload();
-});
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'raskladka.json';
+      a.click();
+    });
+    document.getElementById('importBtn').addEventListener('click', () => {
+      document.getElementById('importFile').click();
+    });
+    document.getElementById('importFile').addEventListener('change', e => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const data = JSON.parse(r.result);
+          if (!data.days) throw 0;
+          state = data;
+          save(); render();
+        } catch (err) { alert('Невалидный файл'); }
+      };
+      r.readAsText(f);
+      e.target.value = '';
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (!confirm('Удалить всю раскладку?')) return;
+      localStorage.removeItem(LS_KEY);
+      location.reload();
+    });
 
-syncDaysCount(parseInt(document.getElementById('daysCount').value)||3);
-renderCheatSheet();
-render();
-</script>
+    syncDaysCount(parseInt(document.getElementById('daysCount').value) || 3);
+    renderCheatSheet();
+    render();
+  </script>
 </body>
+
 </html>
